@@ -1,0 +1,19 @@
+node_modules
+dist
+
+# Keep environment variables out of version control
+.env
+.env.*
+!.env.example
+
+# Prisma Client is generated from prisma/schema.prisma
+src/generated
+
+# Logs
+*.log
+
+# Editor / AI agent tooling (not part of the submission)
+.agents
+.claude
+.windsurf
+skills-lock.json
