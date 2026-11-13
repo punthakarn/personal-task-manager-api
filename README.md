@@ -27,9 +27,13 @@ prisma/
   schema.prisma            # Model User, Task + Enum TaskStatus
   migrations/              # Prisma Migration Files
 prisma.config.ts           # Prisma 7 config (schema / migrations / datasource url)
+postman/
+  Personal Task Manager API.postman_collection.json   # Import เข้า Postman ได้เลย
+  Personal Task Manager API.postman_environment.json
 scripts/
   smoke-test.mjs           # End-to-End API test (ตามลำดับการใช้งานในข้อสอบ)
 src/
+  seed.ts                  # ข้อมูลตัวอย่าง (Alice/Bob + tasks) สำหรับดูใน DBeaver
   app.ts                   # สร้าง Express App, Middleware, Routes
   server.ts                # อ่าน PORT (default 3000) และเริ่ม Server
   config/env.ts            # โหลด/ตรวจสอบ Environment Variables
@@ -79,12 +83,11 @@ npm install
 
 # 3) สร้าง .env จาก .env.example แล้วใส่ค่าจริง
 
-# 4) สร้างตารางด้วย Prisma Migration (ต้องมีโฟลเดอร์ prisma/migrations/)
-npx prisma migrate dev --name init
-#    หรือบนเครื่องใหม่ที่ migrations มีอยู่แล้ว:
-npx prisma migrate deploy
+# 4) สร้างตาราง + ข้อมูลตัวอย่าง (คำสั่งเดียว)
+npm run db:setup
+#    = prisma migrate deploy + prisma generate + seed (Alice/Bob + 4 tasks)
 
-# 5) รัน Server (โหมดพัฒนา)
+# 5) รัน Server
 npm run dev
 #    http://localhost:3000
 
@@ -92,6 +95,55 @@ npm run dev
 npm run build
 npm start
 ```
+
+### คำสั่งที่ใช้บ่อย
+
+| คำสั่ง | ทำอะไร |
+| --- | --- |
+| `npm run dev` | รัน server (auto-reload) |
+| `npm run db:setup` | migrate + generate + seed ข้อมูลตัวอย่าง |
+| `npm run db:seed` | ใส่ข้อมูลตัวอย่างซ้ำได้ (idempotent) |
+| `npm run db:studio` | เปิด Prisma Studio (ดูข้อมูลผ่าน browser) |
+| `npm run test:smoke` | ทดสอบ API ทั้งระบบ 52 checks |
+| `npm run typecheck` | ตรวจ TypeScript |
+
+---
+
+## เปิดใช้งาน 3 ทาง (Browser / Postman / DBeaver)
+
+### 1) Browser
+
+เปิด `http://localhost:3000` → จะเห็นข้อมูล API และรายการ endpoint ทั้งหมด
+ทดสอบเร็ว ๆ: `http://localhost:3000/health` → `{"status":"ok"}`
+
+### 2) Postman
+
+1. เปิด Postman → **Import** → ลากไฟล์ `postman/Personal Task Manager API.postman_collection.json`
+2. (ไม่บังคับ) Import environment: `postman/Personal Task Manager API.postman_environment.json` แล้วเลือก environment "Personal Task Manager API - Local"
+3. รัน **1. Auth → Login Alice (saves token)** ก่อน 1 ครั้ง — script จะเก็บ `accessToken` ลง collection variable ให้อัตโนมัติ
+4. ยิง request อื่น ๆ ต่อได้เลย (Create Task, List Tasks, Update, Delete ...)
+5. กด **Run collection** เพื่อรันทั้งหมดพร้อมกันได้ (มี test assert ทุก request)
+
+บัญชีตัวอย่าง:
+
+| Email | Password | หมายเหตุ |
+| --- | --- | --- |
+| `alice@example.com` | `alicepass123` | มี 3 tasks |
+| `bob@example.com` | `alicepass123` | มี 1 task (แยกข้อมูลจาก Alice) |
+
+### 3) DBeaver
+
+1. New Connection → **PostgreSQL**
+2. Host `localhost`, Port `5432`, Database `task_manager`, User `postgres`, Password `<รหัสของคุณ>`
+3. เปิด `Databases → task_manager → Schemas → public → Tables`
+4. ดับเบิลคลิก `User` หรือ `Task` → แท็บ **Data** (มีข้อมูลตัวอย่างอยู่แล้วจาก seed)
+
+| Table | จำนวนแถวหลัง seed | หมายเหตุ |
+| --- | --- | --- |
+| `User` | 2 | Alice, Bob (password เป็น bcrypt hash) |
+| `Task` | 4 | 3 ของ Alice, 1 ของ Bob |
+| `_prisma_migrations` | 1 | ประวัติ migration ของ Prisma — ห้ามลบ |
+
 
 ---
 
